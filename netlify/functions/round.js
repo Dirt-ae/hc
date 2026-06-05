@@ -1,4 +1,4 @@
-const { json, requireAdmin, supabase } = require("./_shared");
+const { json, requireAdmin, supabase } = require("./shared");
 
 exports.handler = async (event) => {
   try {

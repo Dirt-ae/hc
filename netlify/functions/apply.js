@@ -1,4 +1,4 @@
-const { ipHash, json, supabase } = require("./_shared");
+const { ipHash, json, supabase } = require("./shared");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
