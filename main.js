@@ -177,7 +177,10 @@ function renderSubmission(submission) {
   const author = submission.participants?.name || "Unknown";
   const src = bunnyEmbed(submission.edit_video_id);
   const video = src
-    ? `<iframe class="submission-video" src="${src}" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;" allowfullscreen></iframe>`
+    ? `
+      <iframe class="submission-video" src="${src}" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;" allowfullscreen></iframe>
+      <a class="video-fallback" href="${src}" target="_blank" rel="noreferrer">Open video</a>
+    `
     : `<div class="submission-video empty-video">Video processing</div>`;
 
   return `
@@ -189,8 +192,11 @@ function renderSubmission(submission) {
       ${video}
       <form class="vote-form">
         ${["concept", "individuality", "styleApplication", "execution", "overall"].map((field) => `
-          <label>
-            ${fieldLabel(field)}
+          <label class="rating-field">
+            <span class="rating-head">
+              <span>${fieldLabel(field)}</span>
+              <output>5</output>
+            </span>
             <input name="${field}" type="range" min="1" max="10" value="5" />
           </label>
         `).join("")}
@@ -225,6 +231,12 @@ function wireVoteForms() {
   document.querySelectorAll(".submission-card").forEach((card) => {
     const form = card.querySelector(".vote-form");
     const status = form.querySelector(".status");
+    form.querySelectorAll('input[type="range"]').forEach((input) => {
+      const output = input.closest(".rating-field").querySelector("output");
+      input.addEventListener("input", () => {
+        output.textContent = input.value;
+      });
+    });
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = new FormData(form);
