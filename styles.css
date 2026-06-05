@@ -316,6 +316,64 @@ input:focus {
   grid-template-columns: auto 1fr auto;
 }
 
+.review-panel {
+  margin-top: 10px;
+}
+
+.submissions-list {
+  display: grid;
+  gap: 10px;
+}
+
+.submission-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0b0d11;
+}
+
+.submission-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.submission-card strong {
+  color: var(--ink);
+}
+
+.submission-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #050609;
+}
+
+.empty-video {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.vote-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.vote-form button,
+.vote-form .status {
+  grid-column: 1 / -1;
+}
+
+.vote-form input[type="range"] {
+  padding: 0;
+}
+
 .back-link {
   color: var(--accent);
   font-weight: 800;
@@ -329,7 +387,8 @@ input:focus {
 
   .topbar,
   .compact-grid,
-  .admin-grid-page {
+  .admin-grid-page,
+  .vote-form {
     grid-template-columns: 1fr;
   }
 

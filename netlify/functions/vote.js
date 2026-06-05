@@ -11,6 +11,13 @@ exports.handler = async (event) => {
 
     if (!submissionId || !deviceId) return json(400, { error: "Vote is missing required fields" });
 
+    const roundRows = await supabase("round_state?id=eq.1&select=*", { method: "GET" });
+    const round = roundRows[0];
+    const editEnded = round?.edit_ends_at && Date.now() > Date.parse(round.edit_ends_at);
+    if (!editEnded || round?.voting_locked) {
+      return json(403, { error: "Voting is not open right now." });
+    }
+
     const submissions = await supabase(`submissions?id=eq.${encodeURIComponent(submissionId)}&select=participant_id`, {
       method: "GET",
     });

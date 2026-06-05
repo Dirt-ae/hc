@@ -14,8 +14,11 @@ const editFileName = $("edit-file-name");
 const proofFileName = $("proof-file-name");
 const countdown = $("countdown");
 const songLink = $("song-link");
+const reviewStatus = $("review-status");
+const submissionsList = $("submissions-list");
 const dropzones = [...document.querySelectorAll(".dropzone")];
 let currentRound = null;
+let mySubmission = null;
 
 function deviceId() {
   let id = localStorage.getItem("hc-device-id");
@@ -60,6 +63,40 @@ async function loadRound() {
     roundStatus.textContent = "Offline";
     roundDetail.textContent = "Could not load the current round.";
     return null;
+  }
+}
+
+async function loadMySubmission() {
+  const id = participantId();
+  if (!id) return null;
+  const { submission } = await api(`my-submission?participantId=${encodeURIComponent(id)}`);
+  mySubmission = submission;
+  if (mySubmission) {
+    uploadButton.disabled = true;
+    uploadStatus.textContent = "You already submitted for this HC.";
+  }
+  return submission;
+}
+
+async function loadSubmissions() {
+  if (phase(currentRound) !== "ended") {
+    reviewStatus.textContent = "Edits show here after the timer ends.";
+    submissionsList.innerHTML = "";
+    return;
+  }
+
+  try {
+    const { submissions } = await api("submissions");
+    if (!submissions.length) {
+      reviewStatus.textContent = "No edits submitted yet.";
+      submissionsList.innerHTML = "";
+      return;
+    }
+    reviewStatus.textContent = "Rate each edit from 1 to 10.";
+    submissionsList.innerHTML = submissions.map(renderSubmission).join("");
+    wireVoteForms();
+  } catch (error) {
+    reviewStatus.textContent = error.message;
   }
 }
 
@@ -108,11 +145,97 @@ function renderRound() {
     roundStatus.textContent = "Ended";
     countdown.textContent = "00:00:00";
     roundDetail.textContent = "This HC has ended. Uploads and queue are closed.";
+    loadSubmissions();
   } else {
     roundStatus.textContent = "Waiting";
     countdown.textContent = "--:--:--";
     roundDetail.textContent = "No HC is scheduled yet.";
   }
+}
+
+function bunnyEmbed(videoId) {
+  const host = currentRound?.cdn_hostname || "";
+  return videoId && host ? `https://${host}/embed/${videoId}` : "";
+}
+
+function renderSubmission(submission) {
+  const author = submission.participants?.name || "Unknown";
+  const src = bunnyEmbed(submission.edit_video_id);
+  const video = src
+    ? `<iframe class="submission-video" src="${src}" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;" allowfullscreen></iframe>`
+    : `<div class="submission-video empty-video">Video processing</div>`;
+
+  return `
+    <article class="submission-card" data-submission-id="${submission.id}">
+      <div>
+        <strong>${escapeHtml(submission.title)}</strong>
+        <span>by ${escapeHtml(author)}</span>
+      </div>
+      ${video}
+      <form class="vote-form">
+        ${["concept", "individuality", "styleApplication", "execution", "overall"].map((field) => `
+          <label>
+            ${fieldLabel(field)}
+            <input name="${field}" type="range" min="1" max="10" value="5" />
+          </label>
+        `).join("")}
+        <button type="submit">Submit rating</button>
+        <div class="status"></div>
+      </form>
+    </article>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  }[char]));
+}
+
+function fieldLabel(field) {
+  return {
+    concept: "Concept",
+    individuality: "Individuality",
+    styleApplication: "Style",
+    execution: "Execution",
+    overall: "Overall",
+  }[field];
+}
+
+function wireVoteForms() {
+  document.querySelectorAll(".submission-card").forEach((card) => {
+    const form = card.querySelector(".vote-form");
+    const status = form.querySelector(".status");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      status.textContent = "Submitting rating...";
+      try {
+        await api("vote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            submissionId: card.dataset.submissionId,
+            participantId: participantId(),
+            deviceId: deviceId(),
+            concept: data.get("concept"),
+            individuality: data.get("individuality"),
+            styleApplication: data.get("styleApplication"),
+            execution: data.get("execution"),
+            overall: data.get("overall"),
+          }),
+        });
+        status.textContent = "Rating submitted.";
+        form.querySelector("button").disabled = true;
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    });
+  });
 }
 
 function canUpload(round) {
@@ -217,6 +340,7 @@ uploadForm.addEventListener("submit", async (event) => {
   const proof = $("proof-video").files[0];
   currentRound = await loadRound();
   if (!participantId()) return (uploadStatus.textContent = "Join the queue first.");
+  if (mySubmission || await loadMySubmission()) return (uploadStatus.textContent = "You already submitted for this HC.");
   if (!canUpload(currentRound)) return (uploadStatus.textContent = "Uploads open when the edit timer starts.");
   if (!title || !edit || !proof) return (uploadStatus.textContent = "Add title, edit, and proof.");
 
@@ -245,6 +369,7 @@ uploadForm.addEventListener("submit", async (event) => {
     });
     uploadProgress.style.width = "100%";
     uploadStatus.textContent = "Submission uploaded.";
+    await loadMySubmission();
   } catch (error) {
     uploadStatus.textContent = error.message;
   } finally {
@@ -254,5 +379,6 @@ uploadForm.addEventListener("submit", async (event) => {
 
 deviceId();
 loadRound();
+loadMySubmission().catch(() => {});
 setInterval(renderRound, 1000);
 setInterval(loadRound, 15000);
