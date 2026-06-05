@@ -1,0 +1,16 @@
+[build]
+  publish = "."
+  command = ""
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/dirtonly"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/dirtonly/"
+  to = "/admin.html"
+  status = 200

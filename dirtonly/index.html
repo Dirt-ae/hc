@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HC Admin</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell admin-shell">
+      <header class="topbar">
+        <a class="back-link" href="/">Public</a>
+        <div>
+          <h1>Admin</h1>
+          <p>Round control</p>
+        </div>
+        <div class="state-chip locked" id="admin-badge">Locked</div>
+      </header>
+
+      <section class="compact-grid admin-grid-page">
+        <section class="panel">
+          <h2>Access</h2>
+          <form id="admin-form" class="stack">
+            <label>
+              Password
+              <input id="admin-passcode" type="password" placeholder="Admin password" autocomplete="current-password" />
+            </label>
+            <div class="button-row">
+              <button type="submit">Unlock</button>
+              <button id="lock-admin" type="button" class="secondary">Lock</button>
+            </div>
+          </form>
+          <div id="admin-status" class="status">Locked.</div>
+        </section>
+
+        <section class="panel control-panel">
+          <h2>Controls</h2>
+          <div id="round-status" class="round-card">Loading...</div>
+          <div class="control-grid">
+            <button id="admin-start" type="button">Start</button>
+            <button id="admin-open" type="button" class="secondary">Open submits</button>
+            <button id="admin-close" type="button" class="secondary">Close submits</button>
+            <button id="admin-lock-votes" type="button" class="secondary">Lock votes</button>
+            <button id="admin-reset" type="button" class="danger">Reset</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/admin.js"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HC</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Hour Challenge</h1>
+          <p>Join the queue, submit your edit, and let the judging do the talking.</p>
+        </div>
+        <div class="state-chip" id="round-status">Loading</div>
+      </header>
+
+      <section class="compact-grid">
+        <section class="panel status-panel">
+          <h2>Round</h2>
+          <p id="round-detail">Checking round state...</p>
+        </section>
+
+        <section class="panel">
+          <h2>Apply</h2>
+          <form id="apply-form" class="stack">
+            <label>
+              Name
+              <input id="applicant-name" type="text" placeholder="Display name" required />
+            </label>
+            <button type="submit">Join queue</button>
+          </form>
+          <div id="apply-status" class="status"></div>
+        </section>
+
+        <section class="panel upload-panel">
+          <h2>Submit</h2>
+          <form id="upload-form" class="stack">
+            <label>
+              Title
+              <input id="submission-title" type="text" placeholder="Edit title" required />
+            </label>
+            <div class="dropgrid">
+              <div class="dropzone" data-target="edit-video">
+                <input id="edit-video" type="file" accept="video/*" required />
+                <div class="dropzone-inner">
+                  <strong>Edit</strong>
+                  <span>Drop or choose file</span>
+                  <em id="edit-file-name">No file selected</em>
+                </div>
+              </div>
+              <div class="dropzone" data-target="proof-video">
+                <input id="proof-video" type="file" accept="video/*" required />
+                <div class="dropzone-inner">
+                  <strong>Proof</strong>
+                  <span>Drop or choose file</span>
+                  <em id="proof-file-name">No file selected</em>
+                </div>
+              </div>
+            </div>
+            <button id="upload-button" type="submit">Upload submission</button>
+          </form>
+          <div class="progress-wrap"><div id="upload-progress" class="progress-bar"></div></div>
+          <div id="upload-status" class="status"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Score Areas</h2>
+          <p class="score-intro">Each area is rated from 1 to 10. Final score can be weighted between jury and community votes.</p>
+          <div class="score-grid">
+            <article>
+              <strong>Concept</strong>
+              <span>How clearly the edit communicates an idea, story, emotion, or direction.</span>
+            </article>
+            <article>
+              <strong>Individuality</strong>
+              <span>How distinct the work feels compared with everyone else.</span>
+            </article>
+            <article>
+              <strong>Style</strong>
+              <span>How well the chosen style is applied and supported throughout the edit.</span>
+            </article>
+            <article>
+              <strong>Execution</strong>
+              <span>Timing, polish, transitions, pacing, audio choices, and technical finish.</span>
+            </article>
+            <article>
+              <strong>Overall</strong>
+              <span>The total impact after watching it as one complete piece.</span>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
