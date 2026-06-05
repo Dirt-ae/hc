@@ -1,16 +1,16 @@
 [build]
-  publish = "."
-  command = ""
+  publish = "dist"
+  command = "npm run build"
 
 [functions]
   directory = "netlify/functions"
 
 [[redirects]]
   from = "/dirtonly"
-  to = "/admin.html"
-  status = 200
+  to = "/dirtonly/"
+  status = 301
 
 [[redirects]]
-  from = "/dirtonly/"
+  from = "/admin"
   to = "/admin.html"
   status = 200

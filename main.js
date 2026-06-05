@@ -1,4 +1,4 @@
-import * as tus from "https://esm.sh/tus-js-client@4.3.1";
+import * as tus from "tus-js-client";
 
 const $ = (id) => document.getElementById(id);
 
