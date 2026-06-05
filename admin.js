@@ -6,15 +6,16 @@ const adminBadge = $("admin-badge");
 const adminStatus = $("admin-status");
 const adminPasscode = $("admin-passcode");
 const roundStatus = $("round-status");
+const scheduleBtn = $("admin-schedule");
+const startNowBtn = $("admin-start-now");
+const lockVotesBtn = $("admin-lock-votes");
+const resetBtn = $("admin-reset");
+const queueOpensAt = $("queue-opens-at");
+const editStartsAt = $("edit-starts-at");
+const editMinutes = $("edit-minutes");
+const songUrl = $("song-url");
 
-const controls = {
-  start: $("admin-start"),
-  open: $("admin-open"),
-  close: $("admin-close"),
-  lockVotes: $("admin-lock-votes"),
-  reset: $("admin-reset"),
-};
-
+const controls = [scheduleBtn, startNowBtn, lockVotesBtn, resetBtn];
 let adminPassword = sessionStorage.getItem("hc-admin-password") || "";
 let adminUnlocked = false;
 
@@ -27,37 +28,52 @@ async function api(path, options = {}) {
   } catch {
     throw new Error(`${path} returned a non-JSON response`);
   }
-  if (!response.ok) {
-    throw new Error(data.error || `${path} failed with status ${response.status}`);
-  }
+  if (!response.ok) throw new Error(data.error || `${path} failed with status ${response.status}`);
   return data;
+}
+
+function localInputValue(date) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function toIso(input) {
+  return input ? new Date(input).toISOString() : null;
 }
 
 function renderAdmin() {
   adminBadge.textContent = adminUnlocked ? "Unlocked" : "Locked";
   adminBadge.className = adminUnlocked ? "state-chip live" : "state-chip locked";
   adminStatus.textContent = adminUnlocked ? "Ready." : "Locked.";
-  Object.values(controls).forEach((button) => {
+  controls.forEach((button) => {
     button.disabled = !adminUnlocked;
   });
 }
 
+function fillForm(round) {
+  if (round?.queue_opens_at) queueOpensAt.value = localInputValue(new Date(round.queue_opens_at));
+  if (round?.edit_starts_at) editStartsAt.value = localInputValue(new Date(round.edit_starts_at));
+  if (round?.edit_starts_at && round?.edit_ends_at) {
+    editMinutes.value = Math.max(1, Math.round((Date.parse(round.edit_ends_at) - Date.parse(round.edit_starts_at)) / 60000));
+  }
+  if (round?.song_url) songUrl.value = round.song_url;
+}
+
 function renderRound(round) {
-  const live = round?.active ? "Live" : "Idle";
-  const submissions = round?.submissions_open ? "submits open" : "submits closed";
-  const votes = round?.voting_locked ? "votes locked" : "votes open";
-  roundStatus.textContent = `${live} / ${submissions} / ${votes}`;
+  const live = round?.active ? "Active" : "Idle";
+  const queue = round?.queue_opens_at ? new Date(round.queue_opens_at).toLocaleString() : "not set";
+  const starts = round?.edit_starts_at ? new Date(round.edit_starts_at).toLocaleString() : "not set";
+  const ends = round?.edit_ends_at ? new Date(round.edit_ends_at).toLocaleString() : "not set";
+  roundStatus.textContent = `${live} | Queue: ${queue} | Edit: ${starts} -> ${ends}`;
 }
 
 async function loadRound() {
   try {
     const { round } = await api("round");
+    fillForm(round);
     renderRound(round);
   } catch (error) {
-    roundStatus.textContent = error.message;
-    if (error.message.includes("404")) {
-      roundStatus.textContent = "Backend functions are not deployed.";
-    }
+    roundStatus.textContent = error.message.includes("404") ? "Backend functions are not deployed." : error.message;
   }
 }
 
@@ -71,6 +87,26 @@ async function saveRound(patch) {
     body: JSON.stringify(patch),
   });
   renderRound(round);
+  adminStatus.textContent = "Saved.";
+}
+
+function schedulePatch(startNow = false) {
+  const now = new Date();
+  const queueDate = startNow ? now : new Date(queueOpensAt.value);
+  const editStartDate = startNow ? now : new Date(editStartsAt.value);
+  const minutes = Math.max(1, Number(editMinutes.value) || 60);
+  const editEndDate = new Date(editStartDate.getTime() + minutes * 60000);
+
+  return {
+    active: true,
+    submissionsOpen: true,
+    votingLocked: false,
+    queueOpensAt: queueDate.toISOString(),
+    editStartsAt: editStartDate.toISOString(),
+    editEndsAt: editEndDate.toISOString(),
+    songUrl: songUrl.value.trim() || null,
+    startedAt: editStartDate.toISOString(),
+  };
 }
 
 adminForm.addEventListener("submit", async (event) => {
@@ -93,9 +129,7 @@ adminForm.addEventListener("submit", async (event) => {
     adminPassword = "";
     sessionStorage.removeItem("hc-admin-password");
     renderAdmin();
-    adminStatus.textContent = error.message.includes("404")
-      ? "Backend functions are not deployed."
-      : error.message;
+    adminStatus.textContent = error.message.includes("404") ? "Backend functions are not deployed." : error.message;
   }
 });
 
@@ -106,31 +140,23 @@ lockAdminBtn.addEventListener("click", () => {
   renderAdmin();
 });
 
-controls.start.addEventListener("click", () => {
-  saveRound({
-    active: true,
-    submissionsOpen: true,
-    votingLocked: false,
-    startedAt: new Date().toISOString(),
-  });
-});
+scheduleBtn.addEventListener("click", () => saveRound(schedulePatch(false)));
+startNowBtn.addEventListener("click", () => saveRound(schedulePatch(true)));
+lockVotesBtn.addEventListener("click", () => saveRound({ ...schedulePatch(false), submissionsOpen: false, votingLocked: true }));
+resetBtn.addEventListener("click", () => saveRound({
+  active: false,
+  submissionsOpen: false,
+  votingLocked: false,
+  queueOpensAt: null,
+  editStartsAt: null,
+  editEndsAt: null,
+  songUrl: null,
+  startedAt: null,
+}));
 
-controls.open.addEventListener("click", () => {
-  saveRound({ active: true, submissionsOpen: true, votingLocked: false, startedAt: new Date().toISOString() });
-});
-
-controls.close.addEventListener("click", () => {
-  saveRound({ active: true, submissionsOpen: false, votingLocked: false, startedAt: new Date().toISOString() });
-});
-
-controls.lockVotes.addEventListener("click", () => {
-  saveRound({ active: true, submissionsOpen: false, votingLocked: true, startedAt: new Date().toISOString() });
-});
-
-controls.reset.addEventListener("click", () => {
-  saveRound({ active: false, submissionsOpen: false, votingLocked: false, startedAt: null });
-});
-
+const now = new Date();
+queueOpensAt.value = localInputValue(now);
+editStartsAt.value = localInputValue(new Date(now.getTime() + 5 * 60 * 60000));
 renderAdmin();
 loadRound();
 setInterval(loadRound, 15000);

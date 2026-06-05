@@ -34,12 +34,29 @@
         </section>
 
         <section class="panel control-panel">
-          <h2>Controls</h2>
+          <h2>Schedule</h2>
           <div id="round-status" class="round-card">Loading...</div>
+          <form id="schedule-form" class="stack">
+            <label>
+              Queue opens
+              <input id="queue-opens-at" type="datetime-local" />
+            </label>
+            <label>
+              Edit starts
+              <input id="edit-starts-at" type="datetime-local" />
+            </label>
+            <label>
+              Edit time in minutes
+              <input id="edit-minutes" type="number" min="1" value="60" />
+            </label>
+            <label>
+              Song URL
+              <input id="song-url" type="url" placeholder="https://..." />
+            </label>
+          </form>
           <div class="control-grid">
-            <button id="admin-start" type="button">Start</button>
-            <button id="admin-open" type="button" class="secondary">Open submits</button>
-            <button id="admin-close" type="button" class="secondary">Close submits</button>
+            <button id="admin-schedule" type="button">Save schedule</button>
+            <button id="admin-start-now" type="button" class="secondary">Start now</button>
             <button id="admin-lock-votes" type="button" class="secondary">Lock votes</button>
             <button id="admin-reset" type="button" class="danger">Reset</button>
           </div>

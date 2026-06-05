@@ -12,7 +12,10 @@ const uploadStatus = $("upload-status");
 const uploadProgress = $("upload-progress");
 const editFileName = $("edit-file-name");
 const proofFileName = $("proof-file-name");
+const countdown = $("countdown");
+const songLink = $("song-link");
 const dropzones = [...document.querySelectorAll(".dropzone")];
+let currentRound = null;
 
 function deviceId() {
   let id = localStorage.getItem("hc-device-id");
@@ -50,18 +53,70 @@ async function api(path, options = {}) {
 async function loadRound() {
   try {
     const { round } = await api("round");
-    const open = Boolean(round?.submissions_open);
-    roundStatus.textContent = round?.active ? "Live" : "Waiting";
-    roundStatus.classList.toggle("live", Boolean(round?.active));
-    roundDetail.textContent = open
-      ? "Submissions are open."
-      : "No active HC right now. You can still join the queue or upload early.";
+    currentRound = round;
+    renderRound();
     return round;
   } catch {
     roundStatus.textContent = "Offline";
     roundDetail.textContent = "Could not load the current round.";
     return null;
   }
+}
+
+function phase(round) {
+  if (!round?.active) return "idle";
+  const now = Date.now();
+  const queueOpens = round.queue_opens_at ? Date.parse(round.queue_opens_at) : null;
+  const editStarts = round.edit_starts_at ? Date.parse(round.edit_starts_at) : null;
+  const editEnds = round.edit_ends_at ? Date.parse(round.edit_ends_at) : null;
+  if (!queueOpens || !editStarts || !editEnds) return "unscheduled";
+  if (now < queueOpens) return "scheduled";
+  if (now < editStarts) return "queue";
+  if (now <= editEnds) return "edit";
+  return "ended";
+}
+
+function formatDuration(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+}
+
+function renderRound() {
+  const round = currentRound;
+  const state = phase(round);
+  const now = Date.now();
+  roundStatus.classList.toggle("live", state === "edit");
+  songLink.hidden = !round?.song_url;
+  if (round?.song_url) songLink.href = round.song_url;
+
+  if (state === "scheduled") {
+    roundStatus.textContent = "Scheduled";
+    countdown.textContent = formatDuration(Date.parse(round.queue_opens_at) - now);
+    roundDetail.textContent = "Queue opens when the countdown hits zero.";
+  } else if (state === "queue") {
+    roundStatus.textContent = "Queue";
+    countdown.textContent = formatDuration(Date.parse(round.edit_starts_at) - now);
+    roundDetail.textContent = "Join now. Editing starts when this timer ends.";
+  } else if (state === "edit") {
+    roundStatus.textContent = "Live";
+    countdown.textContent = formatDuration(Date.parse(round.edit_ends_at) - now);
+    roundDetail.textContent = "Edit window is live. Late joins are allowed, but uploads close when time ends.";
+  } else if (state === "ended") {
+    roundStatus.textContent = "Ended";
+    countdown.textContent = "00:00:00";
+    roundDetail.textContent = "This HC has ended. Uploads and queue are closed.";
+  } else {
+    roundStatus.textContent = "Waiting";
+    countdown.textContent = "--:--:--";
+    roundDetail.textContent = "No HC is scheduled yet.";
+  }
+}
+
+function canUpload(round) {
+  return phase(round) === "edit";
 }
 
 async function getUpload(title) {
@@ -160,7 +215,9 @@ uploadForm.addEventListener("submit", async (event) => {
   const title = $("submission-title").value.trim();
   const edit = $("edit-video").files[0];
   const proof = $("proof-video").files[0];
+  currentRound = await loadRound();
   if (!participantId()) return (uploadStatus.textContent = "Join the queue first.");
+  if (!canUpload(currentRound)) return (uploadStatus.textContent = "Uploads open when the edit timer starts.");
   if (!title || !edit || !proof) return (uploadStatus.textContent = "Add title, edit, and proof.");
 
   const maxBytes = 250 * 1024 * 1024;
@@ -197,4 +254,5 @@ uploadForm.addEventListener("submit", async (event) => {
 
 deviceId();
 loadRound();
+setInterval(renderRound, 1000);
 setInterval(loadRound, 15000);

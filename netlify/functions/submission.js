@@ -1,5 +1,14 @@
 const { json, supabase } = require("./shared");
 
+function canUpload(round) {
+  const now = Date.now();
+  const startsAt = round?.edit_starts_at ? Date.parse(round.edit_starts_at) : null;
+  const endsAt = round?.edit_ends_at ? Date.parse(round.edit_ends_at) : null;
+
+  if (!round?.active || !startsAt || !endsAt) return false;
+  return now >= startsAt && now <= endsAt;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
 
@@ -10,6 +19,11 @@ exports.handler = async (event) => {
 
     if (!participantId || !title || !body.editVideoId || !body.proofVideoId) {
       return json(400, { error: "Submission is missing required fields" });
+    }
+
+    const roundRows = await supabase("round_state?id=eq.1&select=*", { method: "GET" });
+    if (!canUpload(roundRows[0])) {
+      return json(403, { error: "Uploads are not open right now." });
     }
 
     const rows = await supabase("submissions", {

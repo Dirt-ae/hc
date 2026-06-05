@@ -13,9 +13,18 @@ create table if not exists round_state (
   active boolean not null default false,
   submissions_open boolean not null default false,
   voting_locked boolean not null default false,
+  queue_opens_at timestamptz,
+  edit_starts_at timestamptz,
+  edit_ends_at timestamptz,
+  song_url text,
   started_at timestamptz,
   updated_at timestamptz not null default now()
 );
+
+alter table round_state add column if not exists queue_opens_at timestamptz;
+alter table round_state add column if not exists edit_starts_at timestamptz;
+alter table round_state add column if not exists edit_ends_at timestamptz;
+alter table round_state add column if not exists song_url text;
 
 insert into round_state (id)
 values (1)

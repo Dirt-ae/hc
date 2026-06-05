@@ -1,5 +1,14 @@
 const { ipHash, json, supabase } = require("./shared");
 
+function canJoin(round) {
+  const now = Date.now();
+  const opensAt = round?.queue_opens_at ? Date.parse(round.queue_opens_at) : null;
+  const endsAt = round?.edit_ends_at ? Date.parse(round.edit_ends_at) : null;
+
+  if (!round?.active || !opensAt || !endsAt) return false;
+  return now >= opensAt && now <= endsAt;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
 
@@ -9,6 +18,11 @@ exports.handler = async (event) => {
     const deviceId = String(body.deviceId || "").trim().slice(0, 120);
 
     if (!name || !deviceId) return json(400, { error: "Name and device are required" });
+
+    const roundRows = await supabase("round_state?id=eq.1&select=*", { method: "GET" });
+    if (!canJoin(roundRows[0])) {
+      return json(403, { error: "Queue is not open right now." });
+    }
 
     const rows = await supabase("participants", {
       method: "POST",

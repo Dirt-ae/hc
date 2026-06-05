@@ -15,6 +15,10 @@ exports.handler = async (event) => {
       active: Boolean(body.active),
       submissions_open: Boolean(body.submissionsOpen),
       voting_locked: Boolean(body.votingLocked),
+      queue_opens_at: body.queueOpensAt || null,
+      edit_starts_at: body.editStartsAt || null,
+      edit_ends_at: body.editEndsAt || null,
+      song_url: body.songUrl || null,
       started_at: body.startedAt || null,
       updated_at: new Date().toISOString(),
     };
