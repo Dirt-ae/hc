@@ -15,9 +15,13 @@ const editStartsAt = $("edit-starts-at");
 const editMinutes = $("edit-minutes");
 const songUrl = $("song-url");
 
-const controls = [scheduleBtn, startNowBtn, lockVotesBtn, resetBtn];
+const controls = [scheduleBtn, startNowBtn, lockVotesBtn, resetBtn].filter(Boolean);
 let adminPassword = sessionStorage.getItem("hc-admin-password") || "";
 let adminUnlocked = false;
+
+if (!scheduleBtn || !startNowBtn || !lockVotesBtn || !resetBtn) {
+  adminStatus.textContent = "Admin page is out of date. Refresh after the latest deploy finishes.";
+}
 
 async function api(path, options = {}) {
   const response = await fetch(`/.netlify/functions/${path}`, options);
@@ -140,10 +144,10 @@ lockAdminBtn.addEventListener("click", () => {
   renderAdmin();
 });
 
-scheduleBtn.addEventListener("click", () => saveRound(schedulePatch(false)));
-startNowBtn.addEventListener("click", () => saveRound(schedulePatch(true)));
-lockVotesBtn.addEventListener("click", () => saveRound({ ...schedulePatch(false), submissionsOpen: false, votingLocked: true }));
-resetBtn.addEventListener("click", () => saveRound({
+scheduleBtn?.addEventListener("click", () => saveRound(schedulePatch(false)));
+startNowBtn?.addEventListener("click", () => saveRound(schedulePatch(true)));
+lockVotesBtn?.addEventListener("click", () => saveRound({ ...schedulePatch(false), submissionsOpen: false, votingLocked: true }));
+resetBtn?.addEventListener("click", () => saveRound({
   active: false,
   submissionsOpen: false,
   votingLocked: false,
