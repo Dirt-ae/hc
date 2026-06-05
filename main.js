@@ -68,12 +68,21 @@ async function loadRound() {
 
 async function loadMySubmission() {
   const id = participantId();
-  if (!id) return null;
+  if (!id) {
+    mySubmission = null;
+    uploadButton.disabled = false;
+    return null;
+  }
   const { submission } = await api(`my-submission?participantId=${encodeURIComponent(id)}`);
   mySubmission = submission;
   if (mySubmission) {
     uploadButton.disabled = true;
     uploadStatus.textContent = "You already submitted for this HC.";
+  } else {
+    uploadButton.disabled = false;
+    if (uploadStatus.textContent === "You already submitted for this HC.") {
+      uploadStatus.textContent = "";
+    }
   }
   return submission;
 }
@@ -323,6 +332,8 @@ applyForm.addEventListener("submit", async (event) => {
       body: JSON.stringify({ name, deviceId: deviceId() }),
     });
     localStorage.setItem("hc-participant-id", participant.id);
+    mySubmission = null;
+    uploadButton.disabled = false;
     applyStatus.textContent = "You are in.";
   } catch (error) {
     if (error.message.includes("404")) {
@@ -340,7 +351,7 @@ uploadForm.addEventListener("submit", async (event) => {
   const proof = $("proof-video").files[0];
   currentRound = await loadRound();
   if (!participantId()) return (uploadStatus.textContent = "Join the queue first.");
-  if (mySubmission || await loadMySubmission()) return (uploadStatus.textContent = "You already submitted for this HC.");
+  if (await loadMySubmission()) return (uploadStatus.textContent = "You already submitted for this HC.");
   if (!canUpload(currentRound)) return (uploadStatus.textContent = "Uploads open when the edit timer starts.");
   if (!title || !edit || !proof) return (uploadStatus.textContent = "Add title, edit, and proof.");
 
