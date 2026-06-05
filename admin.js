@@ -94,6 +94,22 @@ async function saveRound(patch) {
   adminStatus.textContent = "Saved.";
 }
 
+async function resetRound() {
+  const confirmed = window.confirm("Delete this HC round and start fresh? This clears participants, submissions, and votes.");
+  if (!confirmed) return;
+
+  const { round } = await api("reset-round", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Password": adminPassword,
+    },
+  });
+  localStorage.removeItem("hc-participant-id");
+  renderRound(round);
+  adminStatus.textContent = "Round cleared. Ready for a new HC.";
+}
+
 function schedulePatch(startNow = false) {
   const now = new Date();
   const queueDate = startNow ? now : new Date(queueOpensAt.value);
@@ -147,16 +163,7 @@ lockAdminBtn.addEventListener("click", () => {
 scheduleBtn?.addEventListener("click", () => saveRound(schedulePatch(false)));
 startNowBtn?.addEventListener("click", () => saveRound(schedulePatch(true)));
 lockVotesBtn?.addEventListener("click", () => saveRound({ ...schedulePatch(false), submissionsOpen: false, votingLocked: true }));
-resetBtn?.addEventListener("click", () => saveRound({
-  active: false,
-  submissionsOpen: false,
-  votingLocked: false,
-  queueOpensAt: null,
-  editStartsAt: null,
-  editEndsAt: null,
-  songUrl: null,
-  startedAt: null,
-}));
+resetBtn?.addEventListener("click", () => resetRound());
 
 const now = new Date();
 queueOpensAt.value = localInputValue(now);
