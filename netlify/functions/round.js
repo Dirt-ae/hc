@@ -4,7 +4,13 @@ exports.handler = async (event) => {
   try {
     if (event.httpMethod === "GET") {
       const rows = await supabase("round_state?id=eq.1&select=*", { method: "GET" });
-      return json(200, { round: { ...rows[0], cdn_hostname: process.env.BUNNY_CDN_HOSTNAME || "" } });
+      return json(200, {
+        round: {
+          ...rows[0],
+          cdn_hostname: process.env.BUNNY_CDN_HOSTNAME || "",
+          bunny_library_id: process.env.BUNNY_LIBRARY_ID || "",
+        },
+      });
     }
 
     if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
@@ -27,7 +33,13 @@ exports.handler = async (event) => {
       method: "PATCH",
       body: JSON.stringify(patch),
     });
-    return json(200, { round: { ...rows[0], cdn_hostname: process.env.BUNNY_CDN_HOSTNAME || "" } });
+    return json(200, {
+      round: {
+        ...rows[0],
+        cdn_hostname: process.env.BUNNY_CDN_HOSTNAME || "",
+        bunny_library_id: process.env.BUNNY_LIBRARY_ID || "",
+      },
+    });
   } catch (error) {
     return json(error.statusCode || 500, { error: error.message });
   }

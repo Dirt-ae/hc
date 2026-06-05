@@ -19,6 +19,7 @@ const submissionsList = $("submissions-list");
 const dropzones = [...document.querySelectorAll(".dropzone")];
 let currentRound = null;
 let mySubmission = null;
+let loadedSubmissionKey = "";
 
 function deviceId() {
   let id = localStorage.getItem("hc-device-id");
@@ -91,11 +92,16 @@ async function loadSubmissions() {
   if (phase(currentRound) !== "ended") {
     reviewStatus.textContent = "Edits show here after the timer ends.";
     submissionsList.innerHTML = "";
+    loadedSubmissionKey = "";
     return;
   }
 
+  const submissionKey = `${currentRound?.edit_ends_at || ""}:${currentRound?.updated_at || ""}`;
+  if (loadedSubmissionKey === submissionKey) return;
+
   try {
     const { submissions } = await api("submissions");
+    loadedSubmissionKey = submissionKey;
     if (!submissions.length) {
       reviewStatus.textContent = "No edits submitted yet.";
       submissionsList.innerHTML = "";
@@ -163,8 +169,8 @@ function renderRound() {
 }
 
 function bunnyEmbed(videoId) {
-  const host = currentRound?.cdn_hostname || "";
-  return videoId && host ? `https://${host}/embed/${videoId}` : "";
+  const libraryId = currentRound?.bunny_library_id || "";
+  return videoId && libraryId ? `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}` : "";
 }
 
 function renderSubmission(submission) {
@@ -363,6 +369,7 @@ uploadForm.addEventListener("submit", async (event) => {
   uploadButton.disabled = true;
   uploadProgress.style.width = "0%";
   uploadStatus.textContent = "Uploading edit...";
+  let submitted = false;
 
   try {
     const editUpload = await uploadToStorage(edit, `${title} - edit`, 0, 50);
@@ -380,11 +387,12 @@ uploadForm.addEventListener("submit", async (event) => {
     });
     uploadProgress.style.width = "100%";
     uploadStatus.textContent = "Submission uploaded.";
+    submitted = true;
     await loadMySubmission();
   } catch (error) {
     uploadStatus.textContent = error.message;
   } finally {
-    uploadButton.disabled = false;
+    uploadButton.disabled = submitted || Boolean(mySubmission);
   }
 });
 
